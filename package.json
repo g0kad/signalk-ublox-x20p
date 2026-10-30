@@ -17,7 +17,8 @@
     "screenshots": [
       "./doc/screenshots/overview.png",
       "./doc/screenshots/signals.png",
-      "./doc/screenshots/receiver.png"
+      "./doc/screenshots/receiver.png",
+      "./doc/screenshots/plugin-config.png"
     ]
   },
   "files": [

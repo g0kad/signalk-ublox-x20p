@@ -119,6 +119,10 @@ Published once per navigation epoch with source `signalk-ublox-x20p`. Custom pat
 
 ## Plugin options
 
+Set under *Server → Plugin Config → u-blox X20P GNSS*:
+
+![Plugin configuration in the Signal K admin UI](https://raw.githubusercontent.com/g0kad/signalk-ublox-x20p/main/doc/screenshots/plugin-config.png)
+
 | Option | Default | |
 |---|---|---|
 | Serial device | `/dev/serial/by-id/…-if00` | the receiver's USB port |
