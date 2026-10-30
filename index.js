@@ -14,6 +14,7 @@ module.exports = function (app) {
   }
   let receiver = null
   let mapper = null
+  let opts = {}
   const corrections = [] // recent RXM-COR, newest first
 
   plugin.schema = {
@@ -34,6 +35,12 @@ module.exports = function (app) {
       notifications: { type: 'boolean', title: 'Raise notifications for jamming, spoofing, antenna faults and fix loss', default: true },
       headingFromRelposned: { type: 'boolean', title: 'Publish headingTrue from a moving-base receiver (NAV-RELPOSNED)', default: false },
       headingOffset: { type: 'number', title: 'Heading offset (degrees) between antenna baseline and bow', default: 0 },
+      allowOtherReceivers: {
+        type: 'boolean',
+        title: 'Allow configuration changes on receivers other than the ZED-X20P',
+        default: false,
+        description: 'Data from other u-blox receivers is always read. Settings, restore and OSNMA key loading are built and tested for the X20P only, so they are blocked on other receivers unless this is on.'
+      },
       trustedTime: {
         type: 'boolean',
         title: 'Give the receiver trusted time for Galileo OSNMA',
@@ -44,7 +51,7 @@ module.exports = function (app) {
   }
 
   plugin.start = function (options) {
-    const opts = { ...defaults(), ...options }
+    opts = { ...defaults(), ...options }
     mapper = new SignalKMapper(app, plugin.id, opts)
     receiver = new Receiver({
       path: opts.device,
@@ -69,6 +76,8 @@ module.exports = function (app) {
       if (!receiver || !receiver.device.connected) return res.status(503).json({ error: receiver ? receiver.status : 'plugin not running' })
       try { res.json(await fn(req)) } catch (e) { res.status(400).json({ error: e.message }) }
     }
+    // Routes that change the receiver's configuration
+    const write = fn => api(req => { assertWritable(); return fn(req) })
 
     // Signal K requires admin for plugin routes by default; live status is safe for any logged-in user.
     // router.access exists from Signal K 2.x with plugin route permissions.
@@ -80,6 +89,7 @@ module.exports = function (app) {
         connected: receiver.device.connected,
         status: receiver.status,
         info: receiver.info,
+        configLocked: configLocked(),
         navHz: receiver.navHz,
         pvt: s['NAV-PVT'], hp: s['NAV-HPPOSLLH'], dop: s['NAV-DOP'],
         sat: s['NAV-SAT'], sig: s['NAV-SIG'], sec: s['SEC-SIG'], osnma: s['SEC-OSNMA'],
@@ -100,7 +110,7 @@ module.exports = function (app) {
         const d = cfg.lookup(k)
         if (d) defs[k] = { type: d.type, title: d.title, desc: d.desc, unit: d.unit, scale: d.scale, consts: d.consts }
       }
-      return { sections: SECTIONS, defs, values, info: receiver.info, pending: await pendingChanges() }
+      return { sections: SECTIONS, defs, values, info: receiver.info, configLocked: configLocked(), pending: await pendingChanges() }
     }))
 
     // Every key the receiver reports, for the advanced editor
@@ -112,10 +122,10 @@ module.exports = function (app) {
         const d = cfg.lookup(k)
         defs[k] = { type: d.type, title: d.title, desc: d.desc, unit: d.unit, scale: d.scale, consts: d.consts }
       }
-      return { groups: cfg.db.groups, defs, values, hidden: Object.keys(values.ram).length - keys.length }
+      return { groups: cfg.db.groups, defs, values, info: receiver.info, configLocked: configLocked(), hidden: Object.keys(values.ram).length - keys.length }
     }))
 
-    router.post('/api/config', api(async req => {
+    router.post('/api/config', write(async req => {
       const { changes, persist } = req.body || {}
       if (!Array.isArray(changes) || !changes.length) throw new Error('changes must be a non-empty array of {key, value}')
       for (const c of changes) {
@@ -129,17 +139,17 @@ module.exports = function (app) {
 
     router.get('/api/pending', api(pendingChanges))
 
-    router.post('/api/save', api(async () => {
+    router.post('/api/save', write(async () => {
       const keys = (await pendingChanges()).map(p => p.key)
       return { saved: await receiver.saveToFlash(keys), pending: await pendingChanges() }
     }))
 
-    router.post('/api/revert', api(async () => {
+    router.post('/api/revert', write(async () => {
       const keys = (await pendingChanges()).map(p => p.key)
       return { reverted: await receiver.revertRam(keys), pending: await pendingChanges() }
     }))
 
-    router.post('/api/reset-default', api(async req => {
+    router.post('/api/reset-default', write(async req => {
       const keys = (req.body && req.body.keys) || []
       if (!keys.length) throw new Error('keys required')
       return { reset: await receiver.resetToDefault(keys), pending: await pendingChanges() }
@@ -150,11 +160,13 @@ module.exports = function (app) {
     // Body: {backup, dryRun}. dryRun returns the plan without writing anything.
     router.post('/api/restore', api(async req => {
       const { backup, dryRun } = req.body || {}
-      return dryRun ? receiver.restorePlan(backup) : receiver.restore(backup)
+      if (dryRun) return receiver.restorePlan(backup)
+      assertWritable()
+      return receiver.restore(backup)
     }))
 
     // Body: {files: [{name, text}]} — GSC Merkle tree and/or public key files
-    router.post('/api/osnma/keys', api(async req => {
+    router.post('/api/osnma/keys', write(async req => {
       const files = (req.body && req.body.files) || []
       if (!files.length) throw new Error('No files')
       return receiver.loadOsnmaKeys(files)
@@ -166,6 +178,14 @@ module.exports = function (app) {
       await receiver.restart(req.body && req.body.type)
       return { ok: true }
     }))
+  }
+
+  // Configuration writes are blocked on receivers other than the X20P unless the user opts in
+  function configLocked () {
+    return !!receiver && receiver.info.supported === false && !opts.allowOtherReceivers
+  }
+  function assertWritable () {
+    if (configLocked()) throw new Error(`This receiver is a ${receiver.info.version.module || 'model other than the ZED-X20P'}. Configuration changes are only enabled for the ZED-X20P: see "Allow configuration changes on receivers other than the ZED-X20P" in the plugin settings.`)
   }
 
   // Settings whose live (RAM) value differs from what the receiver will load at power-up.

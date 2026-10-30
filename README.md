@@ -36,8 +36,12 @@ every signal on every band, none of which NMEA can carry.
 
 - A **u-blox ZED-X20P** receiver connected to the Signal K host by USB, for example the EVK-X20P
   kit or a breakout board. Developed and tested on an EVK-X20P with firmware HPG 2.02 and 2.11, on
-  a Raspberry Pi 5. Other u-blox receivers that use the same configuration interface (such as the
-  ZED-F9P) may work but are untested.
+  a Raspberry Pi 5.
+
+  Other u-blox receivers that speak UBX with the same configuration interface (such as the ZED-F9P)
+  are untested. The plugin reads and publishes their data, but the configuration pages are built
+  for the X20P. On other receivers, changing settings, restoring backups and loading OSNMA keys are
+  blocked unless you turn on *Allow configuration changes on receivers other than the ZED-X20P*.
 - **Signal K server 2.x.**
 - For **Galileo HAS**: receiver firmware **HPG 2.11** or later, and an antenna that covers the
   **E6 / L6** band. Many "multi-band" antennas only cover L1/L2 or L1/L5.
@@ -132,6 +136,7 @@ Set under *Server → Plugin Config → u-blox X20P GNSS*:
 | Satellites-in-view interval | 5 s | |
 | Notifications | on | jamming, spoofing, antenna faults, fix loss |
 | Heading from moving-base receiver | off | with a heading offset in degrees |
+| Allow configuration changes on other receivers | off | see *Requirements* |
 | Trusted time for OSNMA | off | see *Using Galileo OSNMA* |
 
 ## How the plugin treats the receiver
@@ -158,6 +163,16 @@ Set under *Server → Plugin Config → u-blox X20P GNSS*:
   shows E6 signals being tracked. If none are, the antenna probably doesn't cover E6.
 - **OSNMA keys show "not valid".** Load current files from the GSC; Galileo changes keys from time to time.
 - **"Not authorised" on the Settings page.** Log in to Signal K as an admin user.
+- **"Configuration changes are only enabled for the ZED-X20P".** The receiver isn't an X20P; see
+  *Requirements*.
+
+## Reporting problems
+
+Please open an [issue on GitHub](https://github.com/g0kad/signalk-ublox-x20p/issues/new/choose).
+The form asks for the receiver model and firmware (shown on the *Receiver* tab), your Signal K
+version and platform, and the plugin's debug log. To get the log, turn on *Enable debug log* for
+this plugin under *Server → Plugin Config*, reproduce the problem, then copy the lines that mention
+`signalk-ublox-x20p` from *Server → Server Log*.
 
 ## Development
 

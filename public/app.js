@@ -299,17 +299,29 @@ function signalsSection (sec, defs, values) {
   return out
 }
 
+// Shown on the configuration views when the receiver isn't a ZED-X20P
+function otherReceiverBanner (r) {
+  if (!r || !r.info || r.info.supported !== false) return null
+  const model = (r.info.version && r.info.version.module) || 'not a ZED-X20P'
+  return h('div', { class: 'banner' }, h('strong', {}, `This receiver (${model}) is not a ZED-X20P. `),
+    'Its data is read as normal, but the settings here are built for the X20P and are untested on other receivers. ',
+    r.configLocked
+      ? 'Changing settings, restoring backups and loading OSNMA keys are disabled. To enable them at your own risk, turn on “Allow configuration changes on receivers other than the ZED-X20P” in the plugin settings.'
+      : 'Configuration changes are enabled in the plugin settings: check each change carefully, and make a backup first.')
+}
+
 function actionBar (values) {
   const n = Object.keys(ui.staged).length
   if (!n) return null
+  const locked = ((ui.tab === 'advanced' ? ui.config : ui.settings) || {}).configLocked
   const touchesSignals = Object.keys(ui.staged).some(k => /^CFG-SIGNAL-/.test(k))
   return h('div', { class: 'actionbar' },
     h('strong', {}, `${n} change${n > 1 ? 's' : ''}`),
     touchesSignals ? h('span', { class: 'small muted' }, 'Signal changes restart satellite tracking: expect a few seconds without a fix.') : null,
     h('span', { class: 'spacer', style: 'flex:1' }),
     h('button', { class: 'btn', onclick: () => { ui.staged = {}; render() } }, 'Discard'),
-    h('button', { class: 'btn', disabled: ui.busy, onclick: () => applyStaged(false) }, 'Try it (until power-off)'),
-    h('button', { class: 'btn primary', disabled: ui.busy, onclick: () => applyStaged(true) }, 'Apply & save'))
+    h('button', { class: 'btn', disabled: ui.busy || locked, onclick: () => applyStaged(false) }, 'Try it (until power-off)'),
+    h('button', { class: 'btn primary', disabled: ui.busy || locked, onclick: () => applyStaged(true) }, 'Apply & save'))
 }
 
 async function applyStaged (persist) {
@@ -349,6 +361,7 @@ function renderSettings () {
   const { sections, defs, values } = st
   const fw = st.info && st.info.version
   return h('div', {},
+    otherReceiverBanner(st),
     pendingBanner(st.pending),
     sections.map(sec => {
       let body
@@ -376,6 +389,7 @@ function renderAdvanced () {
   const groupNames = [...new Set(Object.keys(defs).map(k => k.split('-')[1]))].sort()
   const shown = keys.slice(0, 250)
   return h('div', {},
+    otherReceiverBanner(c),
     h('div', { class: 'banner' }, 'Every setting the receiver reports. Changes here are applied exactly as entered. If unsure, use the Settings tab.'),
     h('div', { class: 'row', style: 'margin-bottom:10px' },
       h('input', { type: 'search', placeholder: 'Search name or description', value: ui.advFilter, oninput: e => { ui.advFilter = e.target.value; render(); refocus('search') }, 'data-focus': 'search' }),
@@ -405,7 +419,7 @@ function renderDevice () {
   const restart = (type, text) => () => {
     if (confirm(`${text}\n\nThe receiver will lose its fix briefly. Continue?`)) doAction('/restart', `${type} start requested`, { type })
   }
-  return h('div', { class: 'grid' },
+  return h('div', {}, otherReceiverBanner(s), h('div', { class: 'grid' },
     h('div', { class: 'card' }, h('h2', {}, 'Receiver'),
       h('dl', { class: 'kv' },
         h('dt', {}, 'Module'), h('dd', {}, v.module || '–'),
@@ -435,7 +449,7 @@ function renderDevice () {
         h('dt', {}, 'NMEA sentences'), h('dd', {}, s.parser.nmea),
         h('dt', {}, 'Checksum errors'), h('dd', {}, s.parser.badChecksum)),
       h('details', {}, h('summary', {}, 'Messages received'),
-        h('dl', { class: 'kv small' }, Object.entries(s.counts).map(([k, n]) => [h('dt', {}, k), h('dd', {}, n)])))))
+        h('dl', { class: 'kv small' }, Object.entries(s.counts).map(([k, n]) => [h('dt', {}, k), h('dd', {}, n)]))))))
 }
 
 // ---------- Galileo OSNMA ----------

@@ -1,0 +1,70 @@
+name: Bug report
+description: Something isn't working as expected
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting. The details below save a round of questions, so please fill in what you can.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What you did, what you expected, and what happened instead. Screenshots of the web app help.
+    validations:
+      required: true
+  - type: input
+    id: receiver
+    attributes:
+      label: Receiver model and firmware
+      description: From the web app's *Receiver* tab, e.g. "ZED-X20P, HPG 2.11"
+      placeholder: ZED-X20P, HPG 2.11
+    validations:
+      required: true
+  - type: input
+    id: board
+    attributes:
+      label: Board or kit
+      placeholder: EVK-X20P, breakout board from …
+  - type: input
+    id: plugin
+    attributes:
+      label: Plugin version
+      placeholder: 0.1.0
+    validations:
+      required: true
+  - type: input
+    id: signalk
+    attributes:
+      label: Signal K server version
+      placeholder: 2.x.y
+    validations:
+      required: true
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Platform
+      options:
+        - Raspberry Pi (Raspberry Pi OS / OpenPlotter)
+        - Victron Venus OS (Cerbo GX etc.)
+        - Docker
+        - Other Linux
+        - Windows
+        - macOS
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: connection
+    attributes:
+      label: Connection
+      description: USB or serial (UART), and the device path set in the plugin options
+      placeholder: USB, /dev/serial/by-id/…
+  - type: textarea
+    id: log
+    attributes:
+      label: Debug log
+      description: |
+        Under *Server → Plugin Config → u-blox X20P GNSS*, turn on *Enable debug log*, reproduce the problem,
+        then copy the lines that mention `signalk-ublox-x20p` from *Server → Server Log*.
+      render: text

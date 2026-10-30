@@ -1,0 +1,16 @@
+name: Feature request
+description: Suggest something the plugin should do
+labels: [enhancement]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What would you like?
+      description: What you're trying to do on board, and what the plugin should do to help.
+    validations:
+      required: true
+  - type: input
+    id: receiver
+    attributes:
+      label: Receiver model and firmware
+      placeholder: ZED-X20P, HPG 2.11

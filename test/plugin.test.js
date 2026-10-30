@@ -49,6 +49,51 @@ test('API routes answer 503 while the receiver is not connected', async () => {
   plugin.stop()
 })
 
+test('recognises the ZED-X20P from MON-VER', () => {
+  const { isX20P } = require('../lib/receiver')
+  assert.equal(isX20P({ module: 'ZED-X20P' }), true)
+  assert.equal(isX20P({ module: 'ZED-F9P' }), false)
+  assert.equal(isX20P({}), false)
+})
+
+test('configuration writes are blocked on other receivers unless allowed', async t => {
+  const { Receiver } = require('../lib/receiver')
+  // Pretend a ZED-F9P is connected, without touching a serial port
+  t.mock.method(Receiver.prototype, 'start', function () {
+    this.device.connected = true
+    this.info = { version: { module: 'ZED-F9P' }, supported: false }
+  })
+  t.mock.method(Receiver.prototype, 'stop', () => {})
+  t.mock.method(Receiver.prototype, 'writeConfig', async () => {})
+  t.mock.method(Receiver.prototype, 'readConfig', async () => ({ ram: {}, saved: {} }))
+  const run = async allowOtherReceivers => {
+    const plugin = require('..')(mockApp())
+    const routes = {}
+    const router = { get: (p, h) => { routes[`GET ${p}`] = h }, post: (p, h) => { routes[`POST ${p}`] = h } }
+    plugin.registerWithRouter(router)
+    plugin.start({ device: '/dev/null', allowOtherReceivers })
+    const call = (r, body) => new Promise(resolve => {
+      const res = { code: 200, status (c) { this.code = c; return this }, json (v) { resolve({ code: this.code, body: v }) } }
+      routes[r]({ body }, res)
+    })
+    const out = {
+      status: (await call('GET /api/status')).body,
+      write: await call('POST /api/config', { changes: [{ key: 'CFG-RATE-MEAS', value: 100 }] }),
+      restore: await call('POST /api/restore', { backup: {} })
+    }
+    plugin.stop()
+    return out
+  }
+  const locked = await run(false)
+  assert.equal(locked.status.configLocked, true)
+  assert.equal(locked.write.code, 400)
+  assert.match(locked.write.body.error, /ZED-F9P/)
+  assert.match(locked.restore.body.error, /ZED-F9P/)
+  const allowed = await run(true)
+  assert.equal(allowed.status.configLocked, false)
+  assert.equal(allowed.write.code, 200)
+})
+
 test('maps an epoch to Signal K paths', () => {
   const app = mockApp()
   const m = new SignalKMapper(app, 'test', { cogMinSpeed: 0.25, satelliteInterval: 0, publishDatetime: true, notifications: true })
