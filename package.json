@@ -1,0 +1,39 @@
+{
+  "name": "signalk-ublox-x20p",
+  "version": "0.1.0",
+  "description": "Signal K plugin for u-blox X20P (and other UBX-protocol) GNSS receivers: full UBX data, accuracy, signal and security status, and a friendly receiver configuration UI.",
+  "main": "index.js",
+  "keywords": [
+    "signalk-node-server-plugin",
+    "signalk-webapp",
+    "signalk-category-hardware",
+    "gnss",
+    "u-blox",
+    "x20p"
+  ],
+  "signalk": {
+    "appIcon": "./icon.svg",
+    "displayName": "u-blox X20P GNSS"
+  },
+  "files": [
+    "index.js",
+    "lib/",
+    "public/"
+  ],
+  "author": "g0kad",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/g0kad/signalk-ublox-x20p.git"
+  },
+  "homepage": "https://github.com/g0kad/signalk-ublox-x20p#readme",
+  "bugs": {
+    "url": "https://github.com/g0kad/signalk-ublox-x20p/issues"
+  },
+  "dependencies": {
+    "serialport": "^12.0.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

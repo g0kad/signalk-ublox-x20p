@@ -1,0 +1,8 @@
+node_modules/
+*.log
+*.tgz
+# personal / third-party material, not part of the package
+backups/
+OSNMA/
+docs/
+firmware/

@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>X20P GNSS</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <h1>X20P GNSS</h1>
+    <span class="conn" id="conn">connecting…</span>
+    <span class="spacer"></span>
+    <nav id="tabs">
+      <button data-tab="overview" class="active">Overview</button>
+      <button data-tab="signals">Signals</button>
+      <button data-tab="settings">Settings</button>
+      <button data-tab="advanced">All settings</button>
+      <button data-tab="device">Receiver</button>
+    </nav>
+    <select id="theme" title="Display mode">
+      <option value="">Auto</option>
+      <option value="light">Day</option>
+      <option value="dark">Dusk</option>
+      <option value="night">Night (red)</option>
+    </select>
+  </header>
+  <main id="main"></main>
+  <script src="app.js"></script>
+</body>
+</html>
