@@ -97,9 +97,6 @@ function renderOverview () {
   const used = sig ? sig.sigs.filter(x => x.prUsed).length : 0
   const accPct = Math.max(2, Math.min(100, 100 - Math.log10(Math.max(pos.hAcc, 0.01) / 0.01) * 33))
   const ant = rf && rf.blocks.length ? rf.blocks.map(b => b.antStatusText).find(x => x !== 'ok') || 'ok' : '–'
-  const gal = sig ? sig.sigs.filter(x => x.gnss === 'Galileo' && x.cno > 0) : []
-  const galAuth = gal.filter(x => x.authenticated).length
-
   // Columns: Fix over Accuracy, Position over Security, then Sky and Bands
   return h('div', { class: 'grid' },
     h('div', { class: 'stack' }, h('div', { class: 'card' }, h('h2', {}, 'Fix'),
@@ -131,7 +128,7 @@ function renderOverview () {
         h('dt', {}, 'Jamming'), h('dd', {}, sec ? badge(sec.jamDetEnabled ? sec.jamStateText : 'disabled') : '–'),
         h('dt', {}, 'Spoofing'), h('dd', {}, sec ? badge(sec.spfDetEnabled ? sec.spfStateText : 'disabled') : '–'),
         h('dt', {}, 'Galileo OSNMA'), h('dd', {}, osnma ? badge(osnma.enabled ? osnma.nmaStatusText : 'disabled') : '–'),
-        h('dt', {}, 'Galileo signals authenticated'), h('dd', {}, gal.length ? `${galAuth} / ${gal.length}` : '–'),
+        h('dt', {}, 'Galileo signals authenticated'), h('dd', {}, authenticatedSignals(sig)),
         h('dt', {}, 'Authenticated fix'), h('dd', {}, pvt.nmaFix ? badge('yes', 'ok') : badge('no')),
         h('dt', {}, 'Authenticated time'), h('dd', {}, pvt.authTime ? badge('yes', 'ok') : badge('no')),
         h('dt', {}, 'Antenna'), h('dd', {}, badge(ant))),
@@ -442,6 +439,11 @@ function renderDevice () {
 }
 
 // ---------- Galileo OSNMA ----------
+function authenticatedSignals (sig) {
+  const gal = sig ? sig.sigs.filter(x => x.gnss === 'Galileo' && x.cno > 0) : []
+  return gal.length ? `${gal.filter(x => x.authenticated).length} / ${gal.length}` : '–'
+}
+
 async function uploadOsnmaKeys (fileList) {
   ui.picking = false
   if (!fileList || !fileList.length) return
@@ -471,9 +473,11 @@ function osnmaCard (s) {
       h('dt', {}, 'Key in use by satellites'), h('dd', {}, o.pubKeyId ? `ID ${o.pubKeyId}` : '–'),
       h('dt', {}, 'Merkle tree root'), h('dd', {}, yes(o.merkleRootValid), h('div', { class: 'small muted' }, o.merkleRootSrc)),
       h('dt', {}, 'Public key'), h('dd', {}, yes(o.pubKeyValid), h('div', { class: 'small muted' }, o.pubKeySrc)),
-      h('dt', {}, 'Key chain (TESLA)'), h('dd', {}, o.teslaKeyAuthText),
-      h('dt', {}, 'Time check'), h('dd', { class: 'wrap' }, o.timSyncEnabled ? o.timSyncStatusText : 'not required'),
-      h('dt', {}, 'Satellites authenticated'), h('dd', {}, `${o.authSVs} of ${o.numberSVs}`)),
+      // SEC-OSNMA's own authentication counters stay at zero on HPG 2.11; the per-signal flags in
+      // NAV-SIG and the NAV-PVT fix/time flags are what actually reflect authentication.
+      h('dt', {}, 'Galileo signals authenticated'), h('dd', {}, authenticatedSignals(s.sig)),
+      h('dt', {}, 'Authenticated fix'), h('dd', {}, s.pvt && s.pvt.nmaFix ? badge('yes', 'ok') : badge('no')),
+      h('dt', {}, 'Authenticated time'), h('dd', {}, s.pvt && s.pvt.authTime ? badge('yes', 'ok') : badge('no'))),
     h('p', { class: 'small muted' }, 'Key material is free from the European GNSS Service Centre: download the Merkle tree (gsc-europa.eu/gsc-products/OSNMA/MT) and public key (…/OSNMA/PKI) files, then load them here. Select both at once.'),
     h('div', { class: 'row' },
       h('label', { class: 'btn primary', onclick: holdWhilePicking }, 'Load GSC key files…',

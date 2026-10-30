@@ -13,13 +13,21 @@
   ],
   "signalk": {
     "appIcon": "./icon.svg",
-    "displayName": "u-blox X20P GNSS"
+    "displayName": "u-blox X20P GNSS",
+    "screenshots": [
+      "./doc/screenshots/overview.png",
+      "./doc/screenshots/signals.png",
+      "./doc/screenshots/receiver.png"
+    ]
   },
   "files": [
     "index.js",
     "lib/",
     "public/",
-    "icon.svg"
+    "icon.svg",
+    "test/",
+    "CHANGELOG.md",
+    "doc/screenshots/"
   ],
   "author": "g0kad",
   "license": "Apache-2.0",
@@ -36,5 +44,8 @@
   },
   "engines": {
     "node": ">=18"
+  },
+  "scripts": {
+    "test": "node --test"
   }
 }
