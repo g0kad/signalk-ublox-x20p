@@ -97,9 +97,12 @@ function renderOverview () {
   const used = sig ? sig.sigs.filter(x => x.prUsed).length : 0
   const accPct = Math.max(2, Math.min(100, 100 - Math.log10(Math.max(pos.hAcc, 0.01) / 0.01) * 33))
   const ant = rf && rf.blocks.length ? rf.blocks.map(b => b.antStatusText).find(x => x !== 'ok') || 'ok' : '–'
+  const gal = sig ? sig.sigs.filter(x => x.gnss === 'Galileo' && x.cno > 0) : []
+  const galAuth = gal.filter(x => x.authenticated).length
 
+  // Columns: Fix over Accuracy, Position over Security, then Sky and Bands
   return h('div', { class: 'grid' },
-    h('div', { class: 'card' }, h('h2', {}, 'Fix'),
+    h('div', { class: 'stack' }, h('div', { class: 'card' }, h('h2', {}, 'Fix'),
       h('div', { class: 'row' }, badge(label, cls)),
       h('dl', { class: 'kv' },
         h('dt', {}, 'Satellites used'), h('dd', {}, `${pvt.numSV}`),
@@ -113,8 +116,8 @@ function renderOverview () {
       h('dl', { class: 'kv', style: 'margin-top:10px' },
         h('dt', {}, 'Vertical'), h('dd', {}, fmtDist(pos.vAcc)),
         h('dt', {}, 'Speed'), h('dd', {}, `${fmt(pvt.sAcc * 1.94384, 2)} kn`),
-        h('dt', {}, 'Time'), h('dd', {}, `${fmt(pvt.tAcc * 1e9, 0)} ns`))),
-    h('div', { class: 'card' }, h('h2', {}, 'Position'),
+        h('dt', {}, 'Time'), h('dd', {}, `${fmt(pvt.tAcc * 1e9, 0)} ns`)))),
+    h('div', { class: 'stack' }, h('div', { class: 'card' }, h('h2', {}, 'Position'),
       h('div', { class: 'big', style: 'font-size:20px' }, ddm(pos.lat, 'N', 'S')),
       h('div', { class: 'big', style: 'font-size:20px' }, ddm(pos.lon, 'E', 'W')),
       h('dl', { class: 'kv', style: 'margin-top:8px' },
@@ -128,11 +131,13 @@ function renderOverview () {
         h('dt', {}, 'Jamming'), h('dd', {}, sec ? badge(sec.jamDetEnabled ? sec.jamStateText : 'disabled') : '–'),
         h('dt', {}, 'Spoofing'), h('dd', {}, sec ? badge(sec.spfDetEnabled ? sec.spfStateText : 'disabled') : '–'),
         h('dt', {}, 'Galileo OSNMA'), h('dd', {}, osnma ? badge(osnma.enabled ? osnma.nmaStatusText : 'disabled') : '–'),
+        h('dt', {}, 'Galileo signals authenticated'), h('dd', {}, gal.length ? `${galAuth} / ${gal.length}` : '–'),
         h('dt', {}, 'Authenticated fix'), h('dd', {}, pvt.nmaFix ? badge('yes', 'ok') : badge('no')),
+        h('dt', {}, 'Authenticated time'), h('dd', {}, pvt.authTime ? badge('yes', 'ok') : badge('no')),
         h('dt', {}, 'Antenna'), h('dd', {}, badge(ant))),
       sec && sec.bands.some(b => b.jammed)
         ? h('p', { class: 'small' }, 'Jammed bands: ', sec.bands.filter(b => b.jammed).map(b => FREQ_BAND[b.centFreqKHz] || `${b.centFreqKHz / 1000} MHz`).join(', '))
-        : null),
+        : null)),
     h('div', { class: 'card sky' }, h('h2', {}, 'Sky'), skyPlot(s.sat)),
     h('div', { class: 'card' }, h('h2', {}, 'Bands'), bandSummary(sig))
   )

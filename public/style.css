@@ -34,6 +34,7 @@ nav button { background: none; border: 0; color: var(--muted); padding: 8px 12px
 nav button.active { background: var(--chip); color: var(--text); font-weight: 600; }
 main { padding: 16px; max-width: 1200px; margin: 0 auto; }
 .grid { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+.stack { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
 .card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px; min-width: 0; }
 .card h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin: 0 0 10px; font-weight: 600; }
 .big { font-size: 28px; font-weight: 650; font-variant-numeric: tabular-nums; }

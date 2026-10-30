@@ -18,7 +18,7 @@ discovers which settings the connected receiver supports.
 | `navigation.gnss.horizontalAccuracy`, `.verticalAccuracy`, `.speedAccuracy`, `.courseAccuracy`, `.timeAccuracy` | receiver accuracy estimates (custom) |
 | `navigation.gnss.velocityNorth`, `.velocityEast`, `.velocityDown` | 3D velocity (custom) |
 | `navigation.gnss.correctionSource`, `.carrierSolution`, `.signalsTracked`, `.signalsUsed`, `.verticalDilution`, `.timeDilution` | custom |
-| `navigation.gnss.jamming`, `.spoofing`, `.osnma`, `.antennaStatus` | security state (custom) |
+| `navigation.gnss.jamming`, `.spoofing`, `.osnma`, `.antennaStatus`, `.authenticatedFix`, `.authenticatedSignals` | security state, Galileo OSNMA authentication (custom) |
 | `notifications.navigation.gnss.jamming` / `.spoofing` / `.antenna` / `.fix` | warn / alarm |
 
 Custom paths are published with Signal K `meta` (units and description).
