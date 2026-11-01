@@ -1,6 +1,6 @@
 {
   "name": "signalk-ublox-x20p",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Signal K plugin for the u-blox ZED-X20P GNSS receiver: full UBX data, accuracy, signal and security status, and a friendly receiver configuration UI.",
   "main": "index.js",
   "keywords": [

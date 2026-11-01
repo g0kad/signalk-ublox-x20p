@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.1.1 (2026-11-01)
 
 - Receivers other than the ZED-X20P: data is still read and published, but changing settings,
   restoring backups and loading OSNMA keys are blocked unless the new plugin option *Allow
