@@ -5,6 +5,7 @@ const { Receiver, MANAGED } = require('./lib/receiver')
 const { SignalKMapper } = require('./lib/signalk')
 const { SECTIONS, curatedKeys } = require('./lib/settings-model')
 const cfg = require('./lib/cfg')
+const { TimeServer } = require('./lib/timeserver')
 
 module.exports = function (app) {
   const plugin = {
@@ -14,6 +15,7 @@ module.exports = function (app) {
   }
   let receiver = null
   let mapper = null
+  let timeServer = null
   let opts = {}
   const corrections = [] // recent RXM-COR, newest first
 
@@ -46,6 +48,19 @@ module.exports = function (app) {
         title: 'Give the receiver trusted time for Galileo OSNMA',
         default: false,
         description: 'Sends this computer\'s clock as a trusted time source, only while it is synchronised to network NTP (not to this GNSS). Lets OSNMA apply its anti-replay time check.'
+      },
+      timeServer: {
+        type: 'boolean',
+        title: 'Serve GNSS time to chrony (NTP on localhost)',
+        default: false,
+        description: 'Answers NTP requests on 127.0.0.1 with the receiver\'s time, so chrony can keep this computer\'s clock right without a network. Add "server 127.0.0.1 port 12300 minpoll 4 maxpoll 4" to chrony.conf. Accuracy is milliseconds, not PPS-grade.'
+      },
+      timeServerPort: { type: 'number', title: 'Time server UDP port', default: 12300 },
+      timeServerDelay: {
+        type: 'number',
+        title: 'Receiver message delay (ms)',
+        default: 0,
+        description: 'How long after its epoch a NAV-PVT reaches this computer. Measure it while chrony also has network servers: the offset chronyc reports for 127.0.0.1 (positive when the computer is ahead of the GNSS time).'
       }
     }
   }
@@ -63,12 +78,19 @@ module.exports = function (app) {
     receiver.on('status', (s, error) => error ? app.setPluginError(s) : app.setPluginStatus(s))
     receiver.on('epoch', state => { try { mapper.epoch(state) } catch (e) { app.error(e) } })
     receiver.on('correction', c => { corrections.unshift({ ...c, time: Date.now() }); corrections.length = Math.min(corrections.length, 50) })
+    if (opts.timeServer) {
+      timeServer = new TimeServer({ port: opts.timeServerPort, delayMs: opts.timeServerDelay, debug: app.debug })
+      receiver.on('pvt', pvt => timeServer.sample(pvt, pvt._received))
+      timeServer.start().catch(e => app.error(`time server on port ${opts.timeServerPort}: ${e.message}`))
+    }
     receiver.start()
   }
 
   plugin.stop = function () {
     if (receiver) receiver.stop()
+    if (timeServer) timeServer.stop()
     receiver = null
+    timeServer = null
   }
 
   plugin.registerWithRouter = function (router) {
@@ -96,6 +118,7 @@ module.exports = function (app) {
         rf: s['MON-RF'], sys: s['MON-SYS'], relpos: s['NAV-RELPOSNED'],
         corrections: corrections.slice(0, 10),
         trustedTime: receiver.trustedTime,
+        timeServer: timeServer ? timeServer.status() : null,
         counts: receiver.counts,
         parser: receiver.device.parser.stats
       })

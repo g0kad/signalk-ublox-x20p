@@ -98,6 +98,32 @@ only be verified once Galileo releases its key, typically 30 seconds or more lat
 Without trusted time you can turn off *Settings → Security → Require trusted time for OSNMA*. Galileo
 data is still authenticated, but without replay protection.
 
+## Keeping the computer's clock
+
+Afloat there is often no internet, so nothing keeps the computer's clock right. The plugin holds the
+receiver's port, so gpsd and chrony can't read it directly. Instead, turn on **Serve GNSS time to
+chrony**: the plugin answers NTP requests on `127.0.0.1` (UDP port 12300 by default) with the
+receiver's time. It is stratum 1 while the receiver has a fix and accurate time, and answers
+*unsynchronised* otherwise, so chrony ignores it.
+
+It works from NAV-PVT messages over USB, not a timing pulse, so expect a few milliseconds of jitter
+and a fixed delay of some tens of milliseconds: plenty for logs and displays, not for precision
+timing. In `/etc/chrony/chrony.conf`, keep your network servers and add:
+
+```
+server 127.0.0.1 port 12300 minpoll 4 maxpoll 4 noselect
+```
+
+With internet, `chronyc sourcestats` then shows how far the GNSS time sits from network time; it
+is positive, since messages arrive after their epoch. Put that offset, as shown, in **Receiver
+message delay (ms)**, then remove `noselect`.
+chrony uses network time while it has it and falls back to the receiver offshore.
+
+Don't use the Signal K *set-system-time* plugin as well: it steps the clock against chrony.
+
+When chrony has selected this time server (or any reference clock), the clock comes from GNSS, so
+**Give the receiver trusted time for OSNMA** stops sending it: that would be circular.
+
 ## Signal K data
 
 Published once per navigation epoch with source `signalk-ublox-x20p`. Custom paths carry Signal K
@@ -138,6 +164,7 @@ Set under *Server → Plugin Config → u-blox X20P GNSS*:
 | Heading from moving-base receiver | off | with a heading offset in degrees |
 | Allow configuration changes on other receivers | off | see *Requirements* |
 | Trusted time for OSNMA | off | see *Using Galileo OSNMA* |
+| Serve GNSS time to chrony | off | port 12300, receiver message delay 0 ms; see *Keeping the computer's clock* |
 
 ## How the plugin treats the receiver
 
