@@ -6,6 +6,10 @@
   restoring backups and loading OSNMA keys are blocked unless the new plugin option *Allow
   configuration changes on receivers other than the ZED-X20P* is on. The web app explains why.
 - GitHub issue forms for bug reports and feature requests.
+- New option *Serve GNSS time to chrony*: a small NTP server on 127.0.0.1 that serves the receiver's
+  time, so chrony can keep the computer's clock right offshore without a network. A configurable
+  receiver message delay corrects for USB latency. OSNMA trusted time is not sent while chrony is
+  synchronised to it.
 
 ## 0.1.0 (2026-10-30)
 
